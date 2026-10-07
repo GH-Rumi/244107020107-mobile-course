@@ -1,4 +1,3 @@
-// file: lib/pages/todo_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/todo_provider.dart';
@@ -8,14 +7,13 @@ class TodoPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Membaca dari filteredTodosProvider, bukan list utama
-    final todos = ref.watch(filteredTodosProvider);
+    // Sekarang variabel ini bertipe AsyncValue<List<Todo>>
+    final todosAsync = ref.watch(filteredTodosProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('ToDo Riverpod'),
         actions: [
-          // Filter Popup Menu
           PopupMenuButton<TodoFilter>(
             onSelected: (filter) => ref.read(todoFilterProvider.notifier).setFilter(filter),
             itemBuilder: (context) => const [
@@ -27,13 +25,20 @@ class TodoPage extends ConsumerWidget {
           ),
         ],
       ),
-      body: todos.isEmpty
-          ? const Center(child: Text('Tidak ada tugas'))
-          : ListView.builder(
-              itemCount: todos.length,
-              // Memanggil TodoTile yang ada di bawah file ini
-              itemBuilder: (context, index) => TodoTile(todo: todos[index]),
-            ),
+      // Menerapkan UI Loading, Error, dan Success
+      body: todosAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) => Center(child: Text('Terjadi kesalahan: $error')),
+        data: (todos) {
+          if (todos.isEmpty) {
+            return const Center(child: Text('Tidak ada tugas'));
+          }
+          return ListView.builder(
+            itemCount: todos.length,
+            itemBuilder: (context, index) => TodoTile(todo: todos[index]),
+          );
+        },
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddDialog(context, ref),
         child: const Icon(Icons.add),
@@ -68,14 +73,10 @@ class TodoPage extends ConsumerWidget {
   }
 }
 
-// --- refactoring: Ekstraksi Widget TodoTile ---
 class TodoTile extends ConsumerWidget {
-  final Todo todo; // Hanya membutuhkan objek Todo yang sudah memiliki id
+  final Todo todo;
 
-  const TodoTile({
-    super.key,
-    required this.todo,
-  });
+  const TodoTile({super.key, required this.todo});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
