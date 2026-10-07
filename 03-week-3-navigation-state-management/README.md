@@ -12,3 +12,10 @@
 ### Catatan tambahan
 - `AsyncValue.when` default `skipLoadingOnRefresh: true` — saat `retry()`, data lama tetap tampil sampai fetch baru selesai. Perilaku ini disengaja.
 - `Random` di-inject via constructor → mudah di-mock tanpa `mockito`.
+
+## Checklist Verifikasi Mandiri (Refactoring)
+
+- | ✅ | Navigasi GoRouter bekerja: pindah halaman, back, dan akses path detail langsung.
+- | ✅ | `ProviderScope` membungkus root aplikasi; state ToDo bertahan saat berpindah halaman.
+- | ✅ | UI `AsyncValue` menangani loading, error, dan success, bukan hanya success.
+- | ✅ | `flutter analyze` tanpa issue dan semua test lulus.
