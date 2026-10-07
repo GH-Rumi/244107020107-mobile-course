@@ -7,22 +7,30 @@ class StatsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final todos = ref.watch(todoListProvider); // Tetap baca data utama untuk statistik
-    final completed = todos.where((t) => t.done).length;
-    final active = todos.length - completed;
+    final todosAsync = ref.watch(todoListProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Statistik')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Total Tugas: ${todos.length}', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 10),
-            Text('Selesai: $completed', style: const TextStyle(color: Colors.green, fontSize: 18)),
-            Text('Belum Selesai: $active', style: const TextStyle(color: Colors.red, fontSize: 18)),
-          ],
-        ),
+      // Menerapkan UI Loading, Error, dan Success
+      body: todosAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(child: Text('Terjadi kesalahan: $error')),
+        data: (todos) {
+          final completed = todos.where((t) => t.done).length;
+          final active = todos.length - completed;
+
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Total Tugas: ${todos.length}', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 10),
+                Text('Selesai: $completed', style: const TextStyle(color: Colors.green, fontSize: 18)),
+                Text('Belum Selesai: $active', style: const TextStyle(color: Colors.red, fontSize: 18)),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
