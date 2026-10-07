@@ -1,0 +1,27 @@
+class Comment {
+  const Comment({
+    required this.postId,
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.body,
+  });
+
+  final int postId;
+  final int id;
+  final String name;
+  final String email;
+  final String body;
+
+  // Penjelasan: Factory method fromJson dengan penanganan null yang aman.
+  // Jika field tidak ada atau bernilai null, akan diberikan nilai default (0 atau '').
+  factory Comment.fromJson(Map<String, dynamic> json) {
+    return Comment(
+      postId: (json['postId'] as num?)?.toInt() ?? 0,
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      name: json['name'] as String? ?? '',
+      email: json['email'] as String? ?? '',
+      body: json['body'] as String? ?? '',
+    );
+  }
+}
