@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/local/note.dart';
 import '../data/repositories/note_repository.dart';
+import '../data/sync.dart'; // Import logika sync terisolasi
+import '../widgets/note_tile.dart'; // Import widget tile baru
 import 'settings_page.dart';
+import 'note_detail_page.dart';
 
 final noteRepositoryProvider = Provider((ref) => NoteRepository());
 
@@ -17,17 +20,6 @@ final dirtyCountProvider = FutureProvider<int>((ref) {
 class NotesPage extends ConsumerWidget {
   const NotesPage({super.key});
 
-  // Fungsi simulasi sync sesuai jobsheet
-  Future<int> syncNotes(NoteRepository repo) async {
-    final dirtyCount = await repo.countDirty();
-    if (dirtyCount == 0) return 0;
-    
-    // Simulasi upload / koneksi jaringan lambat
-    await Future.delayed(const Duration(seconds: 1));
-    await repo.markAllSynced();
-    return dirtyCount;
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notesState = ref.watch(notesProvider);
@@ -37,7 +29,6 @@ class NotesPage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Offline Notes'),
         actions: [
-          // Indikator Badge Jumlah Dirty
           Center(
             child: Padding(
               padding: const EdgeInsets.only(right: 16.0),
@@ -48,12 +39,11 @@ class NotesPage extends ConsumerWidget {
                   child: IconButton(
                     icon: const Icon(Icons.sync),
                     onPressed: () async {
-                      // Jalankan antrean sync
                       final repo = ref.read(noteRepositoryProvider);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Menyinkronkan data...')),
                       );
-                      await syncNotes(repo);
+                      await syncNotes(repo); // Memanggil sync dari sync.dart
                       ref.invalidate(notesProvider);
                       ref.invalidate(dirtyCountProvider);
                     },
@@ -81,23 +71,22 @@ class NotesPage extends ConsumerWidget {
             itemCount: notes.length,
             itemBuilder: (context, index) {
               final note = notes[index];
-              return ListTile(
-                title: Text(note.title),
-                subtitle: Text(note.updatedAt.toString()),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (note.dirty) const Icon(Icons.cloud_off, size: 16, color: Colors.orange),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () async {
-                        await ref.read(noteRepositoryProvider).deleteNote(note.id!);
-                        ref.invalidate(notesProvider);
-                        ref.invalidate(dirtyCountProvider);
-                      },
+              return NoteTile(
+                note: note,
+                onTap: () {
+                  // Navigasi ke detail catatan (simulasi GoRouter / Navigator standar)
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => NoteDetailPage(noteId: note.id ?? 0),
                     ),
-                  ],
-                ),
+                  );
+                },
+                onDelete: () async {
+                  await ref.read(noteRepositoryProvider).deleteNote(note.id!);
+                  ref.invalidate(notesProvider);
+                  ref.invalidate(dirtyCountProvider);
+                },
               );
             },
           );
@@ -107,12 +96,10 @@ class NotesPage extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          // Menambahkan catatan akan tersimpan sebagai dirty = 1
           await ref.read(noteRepositoryProvider).addNote(
-                title: 'Catatan ${DateTime.now().second}',
-                body: 'Deskripsi singkat...',
+                title: 'Catatan Baru ${DateTime.now().second}',
+                body: 'Isi catatan offline-first...',
               );
-          // Refresh state UI
           ref.invalidate(notesProvider);
           ref.invalidate(dirtyCountProvider);
         },
